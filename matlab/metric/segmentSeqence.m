@@ -1,4 +1,7 @@
-function seg = segmentSeqence(seq, winSize, stepSize)
+function seg = segmentSeqence(seq, opt)
+
+winSize = opt.winSize;
+stepSize = opt.stepSize;
 
 [d, n] = size(seq);
 nSeg = ceil((n - winSize) / stepSize) + 1;

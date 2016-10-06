@@ -17,7 +17,7 @@ function Result= funEvalDetection(gtlabE, tslab, thr)
 %       .Prec: correctly detected events over all detected events (dct_NT/dct_N)
 %       .Rec: correctly detected events over all ground truth events (dct_NT/tru_N)
 
-class_N=length(unique(gtlabE(:,1)));
+class_N = max(unique(gtlabE(:,1))); % null class is always the largest
 e = cumsum(gtlabE(:,2));
 s = [1; e(1:end-1)+1];
 seglab = [s e];
@@ -74,7 +74,7 @@ im_true = labelConv(gtlabE, 'slab2flab');
 im_test = tslab;
 
 gt = subplot(2,1,1);
-imagesc(im_true);
+image(im_true);
 % ft1 = title('');
 % set(ft1, 'FontSize', 10);
 set(gt, 'XTick', []);
@@ -89,7 +89,7 @@ title(['Event-based Detection Results (',num2str(thr),' overlap): Total Events='
        '; Recall=', num2str(Result.Rec)])
 
 ts = subplot(2,1,2);
-imagesc(im_test);
+image(im_test);
 % ft2 = title('');
 % set(ft2, 'FontSize', 10);
 set(ts, 'XTick', []);
