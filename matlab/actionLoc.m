@@ -1,8 +1,6 @@
-function results = actionLoc(seqs, gtE, opt)
-
-if opt.diff == true
-    seqs = cellfun( @(t) diff(t,[],2), seqs, 'UniformOutput', false);
-end
+function [results, time] = actionLoc(seqs, gtE, opt)
+% the main action localization function
+% training and testing
 
 teInd = opt.teIndex;
 trInd = opt.trIndex;
@@ -22,7 +20,9 @@ if opt.pca == true
 end
 
 % train
+trainStart = tic;
 Gm = actionLoc_train(seqs_train, gtE_train, opt);
+trainTime = toc(trainStart);
 
 % PCA
 if opt.pca == true
@@ -30,7 +30,11 @@ if opt.pca == true
 end
 
 % test
+testStart = tic;
 results = actionLoc_test(seqs_test, gte_test, Gm, opt);
+testTime = toc(testStart);
 
+time.trainTime = trainTime;
+time.testTime = testTime;
 
 end

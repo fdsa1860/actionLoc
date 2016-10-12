@@ -33,8 +33,9 @@ end
 
 % get Gram matrices for each segment
 G = cell(length(ts), 1);
+% H = cell(length(ts), 1);
 for i = 1:length(ts)
-    G{i} = getGram_batch(ts{i}, opt);
+    [G{i}] = getGram_batch(ts{i}, opt);
 end
 % get means Gram matrices from each class
 Gm = cell(length(G), 1);
