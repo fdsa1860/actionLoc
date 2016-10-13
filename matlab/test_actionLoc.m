@@ -41,10 +41,11 @@ time.trainTime = 0;
 time.testTime = 0;
 time.runTime = 0;
 
-[data, gt, tr_te_split] = parseDataset(opt);
+% [data, gt, tr_te_split] = parseDataset(opt);
 
 if strcmp(opt.dataset, 'activitynet');
-    [accuracy, y_pred, y_val] = actionLoc_activitynet(data, gt, tr_te_split, opt);
+    [accuracy, y_pred, y_val] = actionLoc_activitynet_incr(opt);
+%     [accuracy, y_pred, y_val] = actionLoc_activitynet(data, gt, tr_te_split, opt);
     accuracy
 end
 

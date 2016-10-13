@@ -17,7 +17,7 @@ end
 
 lbl = label.database;
 
-L = 1000;
+L = 2000;
 data = cell(L, 1);
 gt = cell(L, 1);
 trInd = false(L, 1);
