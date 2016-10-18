@@ -4,7 +4,7 @@ winSize = opt.winSize;
 stepSize = opt.stepSize;
 
 [d, n] = size(seq);
-nSeg = ceil((n - winSize) / stepSize) + 1;
+nSeg = max(1, ceil((n - winSize) / stepSize) + 1);
 seg = cell(1, nSeg);
 count = 1;
 tStart = 1;

@@ -1,4 +1,6 @@
-function [accuracy, y_pred, y_val] = actionLoc_activitynet_incr(opt)
+function [res] = actionLoc_activitynet_incr(opt)
+
+runTimeStart = tic;
 
 dataPath = opt.dataPath;
 fileName = 'sub_activitynet_v1-3.c3d.hdf5';
@@ -21,75 +23,132 @@ end
 lbl = label.database;
 
 % train incrementally
+
 if ~exist(fullfile('..', 'expData', 'Gm.mat'), 'file')
+    trainTimeStart = tic;
     nTrain = nnz(trInd);
     vidTrainList = vidList(trInd);
     cVidTrainList = cVidList(trInd);
-    trainLabelList = cell(nTrain, 1);
+    trainLabelList = cell(2*nTrain, 1);
+    videoIndex = zeros(2*nTrain, 1);
+    annoIndex = zeros(2*nTrain, 1);
+    count = 1;
     for i = 1:nTrain
-        trainLabelList{i} = lbl.(cVidTrainList{i}).annotations{1}.label;
+        currAnnotations = lbl.(cVidTrainList{i}).annotations;
+        for j = 1:length(currAnnotations)
+            trainLabelList{count} = currAnnotations{j}.label;
+            videoIndex(count) = i;
+            annoIndex(count) = j;
+            count = count + 1;
+        end
     end
+    trainLabelList(count:end) = [];
+    videoIndex(count:end) = [];
+    annoIndex(count:end) = [];
     
     Gm = cell(length(activityList), 1);
     for j = 1:length(activityList)
         fprintf('Training activity %d/%d ... \n', j, length(activityList));
         index = find(strcmp(trainLabelList, activityList{j}));
         G_pool = cell(length(index), 1);
+        len = zeros(length(index), 1);
         for i = 1:length(index)
-            dataName = sprintf('/%s/c3d_features', vidTrainList{index(i)});
-            data = h5read(fullfile(dataPath, fileName), dataName);
-            G_pool{i} = getGram(data, opt);
+            dataName = sprintf('/%s/c3d_features', vidTrainList{videoIndex(index(i))});
+            currSeq = h5read(fullfile(dataPath, fileName), dataName);
+            nFeat = size(currSeq, 2);
+            anno = lbl.(cVidTrainList{videoIndex(index(i))}).annotations{annoIndex(index(i))};
+            duration = lbl.(cVidTrainList{videoIndex(index(i))}).duration;
+            fps = ceil( (nFeat + 1) * 8 / duration );
+            featInd = round(anno.segment * fps / 8);
+            featInd(1) = max(1, min(nFeat, featInd(1)));
+            featInd(2) = max(1, min(nFeat, featInd(2)));
+            len(i) = featInd(2) - featInd(1) + 1;
+            G_pool{i} = getGram(currSeq(:,featInd(1):featInd(2)), opt);
         end
+        G_pool(len < opt.minLength) = [];
         Gm{j} = gramMean(G_pool, opt);
     end
     
+    trainTime = toc(trainTimeStart);
     save(fullfile('..', 'expData', 'Gm.mat'), 'Gm');
 else
     load(fullfile('..', 'expData', 'Gm.mat'));
 end
 
 % validation
+validationTimeStart = tic;
 nVal = nnz(valInd);
 vidValidationList = vidList(valInd);
 cVidValidationList = cVidList(valInd);
-y_pred = cell(nVal, 1);
-y_val = cell(nVal, 1);
+total_hitCount = 0;
+total_gtCount = 0;
+total_dtCount = 0;
 for i = 1:nVal
-    fprintf('Test on Validation data %d/%d ... \n', i, nVal);
-    y_val{i} = lbl.(cVidValidationList{i}).annotations{1}.label;
+% for i = 97
+    fprintf('Test on Validation data %d/%d ... \t', i, nVal);
+    gtAnnotations = lbl.(cVidValidationList{i}).annotations;
+%     y_val{i} = lbl.(cVidValidationList{i}).annotations{1}.label;
     dataName = sprintf('/%s/c3d_features', vidValidationList{i});
-    data = h5read(fullfile(dataPath, fileName), dataName);
-    G = getGram(data, opt);
-    d = HHdist(Gm, {G}, opt);
-    [~, ind] = min(d);
-    y_pred{i} = activityList{ind};
+    currSeq = h5read(fullfile(dataPath, fileName), dataName);
+    % estimate frames per second
+    nFeat = size(currSeq, 2);
+    duration = lbl.(cVidValidationList{i}).duration;
+    fps = ceil( (nFeat + 1) * 8 / duration );
+    
+%     slideSeg = segmentSeqence(currSeq, opt);
+%     % cluster and re-sesgment
+%     [cLabel] = greedyClustering2(slideSeg, currSeq, opt);
+% %     [cLabel, W] = clustering(slideSeg, opt);
+%     seg = getClusterSegment(currSeq, cLabel);
+%     seg = mergeShortSegment(seg, opt);
+%     len = cell2mat(cellfun(@(x)size(x, 2), seg, 'UniformOutput', false));
+%     cumLen = cumsum(len);
+%     t = cumLen * 8 / fps;
+%     intervel = [ [0; t(1:end-1)], t];
+
+    seg = cell(length(gtAnnotations), 1);
+    intervel = zeros(length(gtAnnotations), 2);
+    for j = 1:length(gtAnnotations)
+        intervel(j, :) = gtAnnotations{j}.segment;
+        featInd = round(intervel(j, :) * fps / 8);
+        featInd(1) = max(1, min(nFeat, featInd(1)));
+        featInd(2) = max(1, min(nFeat, featInd(2)));
+        seg{j} = currSeq(:, featInd(1):featInd(2));
+    end
+    
+    G = getGram_batch(seg, opt);
+    D = HHdist(Gm, G, opt);
+    [value, ind] = min(D);
+
+    dtAnnotations = cell(length(seg), 1);
+    for j = 1:length(seg)
+        dtAnnotations{j}.label = activityList{ind(j)};
+        dtAnnotations{j}.segment = intervel(j, :);
+    end
+    hitCount = compareAnnotations(gtAnnotations, dtAnnotations, opt);
+    gtCount = length(gtAnnotations);
+    dtCount = length(dtAnnotations);
+    total_hitCount = total_hitCount + hitCount;
+    total_gtCount = total_gtCount + gtCount;
+    total_dtCount = total_dtCount + dtCount;
+    fprintf('hit / gt = %d/%d,\t hit / dt = %d/%d\n', hitCount, gtCount, hitCount, dtCount);
 end
+validationTime = toc(validationTimeStart);
 
-% y_pred = cell(length(info.Groups), 1);
-% y_val = cell(length(info.Groups), 1);
-% count = 1;
-% for i = 1:length(info.Groups)
-%     vid = info.Groups(i).Name(2:end);
-%     cVid = convertVID(vid);
-%     l = lbl.(cVid);
-%     if ~strcmp(l.subset, 'validation')
-%         continue;
-%     end
-%     dataName = sprintf('/%s/c3d_features', vid);
-%     data = h5read(fullfile(dataPath, fileName), dataName);
-%     G = getGram(data, opt);
-%     d = HHdist(Gm, {G}, opt);
-%     [~, ind] = min(d);
-%     y_pred{count} = activityList{ind};
-%     y_val{count} = l.annotations{1}.label;
-%     count = count + 1;
-% end
-% y_pred(count:end) = [];
-% y_val(count:end) = [];
+recall = total_hitCount / total_gtCount;
+precision = total_hitCount / total_dtCount;
 
-accuracy = nnz(strcmp(y_val, y_pred)) / length(y_val);
+runTime = toc(runTimeStart);
 
-save(fullfile('..', 'expData', 'res_activitynet.mat'), accuracy, y_pred, ...
-    y_val);
+res.recall = recall;
+res.precision = precision;
+res.total_hitCount = total_hitCount;
+res.total_gtCount = total_gtCount;
+res.total_dtCount = total_dtCount;
+res.trainTime = trainTime;
+res.validationTime = validationTime;
+res.runTime = runTime;
+
+save(fullfile('..', 'expData','res', 'activitynet', 'res.mat'), 'res');
 
 end

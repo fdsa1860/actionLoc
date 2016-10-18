@@ -31,14 +31,20 @@ for i = 1:n
 end
 
 % gLabel = [gLabel(1)*ones(winSize, 1); gLabel];
+gcLabel = ones(size(currSeq, 2), 1);
+if all(gLabel==1)
+    return;
+end
 
 slideSeg = getClusterSlideSegment(currSeq, gLabel, opt);
 G = getGram_batch(slideSeg, opt);
 D = HHdist(G, [], opt);
 
 kNN = ceil(kNN_ratio * length(slideSeg));
-[cLabel, W] = ncutD(D, nCluster, kNN, scale_sig);
-gcLabel = zeros(size(currSeq, 2), 1);
+if kNN <= 2
+    kNN = size(D, 1);
+end
+[cLabel, W] = ncutD(D, nCluster, kNN, scale_sig, opt.eigThres);
 gcLabel(1:opt.winSize-1) = cLabel(1);
 count = opt.winSize;
 for i = 1:length(slideSeg)

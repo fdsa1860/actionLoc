@@ -1,4 +1,4 @@
-function [label,W] = ncutD(D,nCluster,kNN, scale_sig)
+function [label,W] = ncutD(D,nCluster,kNN, scale_sig, eigThres)
 % ncutW:
 % perform normalized cut clustering distance matrix D
 % Input:
@@ -9,6 +9,10 @@ function [label,W] = ncutD(D,nCluster,kNN, scale_sig)
 % Output:
 % label: the clustered labeling results
 % W: similarity matrix
+
+if nargin < 5
+    eigThres = 0.1;
+end
 
 if nargin < 4
     scale_sig = 1;
@@ -29,6 +33,18 @@ end
 
 n = size(D, 1);
 W = exp(-D.^2/(2*scale_sig^2));
+
+if nCluster == -1
+    d = sum(W);
+    DInvSqrt = diag( 1 ./ sqrt(d+eps) );
+    L = eye(size(W)) - DInvSqrt * W * DInvSqrt;
+    % [eigVec, EigVal] = eigs(L,nEigVal,'SM');
+    [eigVec, EigVal] = eig(L);
+    eigVal = diag(EigVal);
+    eigVal = sort(eigVal);
+    nCluster = nnz(eigVal < eigThres);
+end
+
 NcutDiscrete = ncutW(W, nCluster);
 % label = sortLabel_count(NcutDiscrete);
 label = sortLabel_order(NcutDiscrete, 1:n);

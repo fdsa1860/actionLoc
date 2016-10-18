@@ -9,11 +9,9 @@ addpath(genpath('../3rdParty'));
 addpath(genpath('.'));
 
 % dataset parameters
-% opt.dataset = 'MAD';
-% opt.dataPath = fullfile('~','research','data','MAD','data_code','Sub_all');
-% opt.nAction = 36;
-opt.dataset = 'activitynet';
-opt.dataPath = fullfile('~','research','data','activitynet');
+opt.dataset = 'MAD';
+opt.dataPath = fullfile('~','research','data','MAD','data_code','Sub_all');
+opt.nAction = 36;
 
 % preprocessing parameters
 opt.diff = false;
@@ -41,13 +39,7 @@ time.trainTime = 0;
 time.testTime = 0;
 time.runTime = 0;
 
-% [data, gt, tr_te_split] = parseDataset(opt);
-
-if strcmp(opt.dataset, 'activitynet');
-    [accuracy, y_pred, y_val] = actionLoc_activitynet_incr(opt);
-%     [accuracy, y_pred, y_val] = actionLoc_activitynet(data, gt, tr_te_split, opt);
-    accuracy
-end
+[data, gt, tr_te_split] = parseDataset(opt);
 
 data = preProcessing(data, opt);
 

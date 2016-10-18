@@ -10,7 +10,7 @@ for i = 1:length(seg);
     end
 end
 
-if count <= length(seg2)
+if count <= length(seg2) && count > 1
     if ~isempty(seg2{count})
         seg2{count-1} = [seg2{count-1}, seg2{count}];
     end
