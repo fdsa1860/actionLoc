@@ -1,7 +1,7 @@
 TARGETS := getVideoFrameNumbers
 
-CXXFLAGS := -Wall $(shell pkg-config --cflags opencv libavutil libavcodec libavformat libavdevice libavfilter libavresample libswscale libpostproc)
-LDFLAGS := $(shell pkg-config --libs opencv libavutil libavcodec libavformat libavdevice libavfilter libavresample libswscale libpostproc)
+CXXFLAGS := -Wall $(shell pkg-config --cflags opencv)
+LDFLAGS := $(shell pkg-config --libs opencv)
 
 CXX = g++
 

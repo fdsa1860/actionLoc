@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # input file
-_db="./input.txt"
+_db="./videoList.txt"
 
 # output file
 o="./output.txt"
