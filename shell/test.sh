@@ -11,7 +11,7 @@ then
 
 while IFS= read -r line
     do
-#echo "$line"
-    ffmpeg -i $line -vcodec copy -f rawvideo -y /dev/null 2>&1 | tr ^M '\n' | awk '/^frame=/ {print $2}'|tail -n 1
+#	echo "$line"
+	ffprobe -select_streams v -show_streams $line 2>/dev/null | grep nb_frames | sed -e 's/nb_frames=//'
 done < $_db
 fi
