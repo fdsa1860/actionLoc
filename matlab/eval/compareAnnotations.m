@@ -5,11 +5,11 @@ hitCount = 0;
 for i = 1:length(gtAnnotations)
     currLabel = gtAnnotations{i}.label;
     for j = 1:length(dtAnnotations)
-        if ~strcmp(dtAnnotations{j}.label, currLabel)
+        if ~strcmp(dtAnnotations(j).label, currLabel)
             continue;
         end
         gtInt = gtAnnotations{i}.segment;
-        dtInt = dtAnnotations{j}.segment;
+        dtInt = dtAnnotations(j).segment;
         if IoU(gtInt, dtInt) > opt.hitThres
             hitCount = hitCount + 1;
             break;

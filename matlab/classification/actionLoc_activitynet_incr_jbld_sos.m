@@ -1,4 +1,4 @@
-function [res] = actionLoc_activitynet_incr(opt)
+function [res] = actionLoc_activitynet_incr_jbld_sos(opt)
 
 runTimeStart = tic;
 
@@ -50,6 +50,9 @@ if ~exist(fullfile('..', 'expData', 'Gm.mat'), 'file')
     distGm = cell(length(activityList), 1);
     for j = 1:length(activityList)
         fprintf('Training activity %d/%d ... \n', j, length(activityList));
+%             index1 = find(strcmp(trainLabelList, activityList{143}));
+%             index2 = find(strcmp(trainLabelList, activityList{155}));
+%             index = [index1; index2];
         index = find(strcmp(trainLabelList, activityList{j}));
         G_pool = cell(length(index), 1);
         len = zeros(length(index), 1);
@@ -84,6 +87,68 @@ for i = 1:length(distGm)
     M_inv{i} = getInverseMomentMat(distGm{i}, opt.mOrd);
 end
 
+% % test on training data
+% total_hitCount = 0;
+% total_gtCount = 0;
+% total_dtCount = 0;
+% nTrain = nnz(trInd);
+% vidTrainList = vidList(trInd);
+% cVidTrainList = cVidList(trInd);
+% for i = 1:nTrain
+% % for i = 97
+%     fprintf('Test on training data %d/%d ... \t', i, nTrain);
+%     gtAnnotations = lbl.(cVidTrainList{i}).annotations;
+%     dataName = sprintf('/%s/c3d_features', vidTrainList{i});
+%     currSeq = h5read(fullfile(dataPath, fileName), dataName);
+%     % estimate frames per second
+%     nFeat = size(currSeq, 2);
+%     duration = lbl.(cVidTrainList{i}).duration;
+%     fps = ceil( (nFeat + 1) * 8 / duration );
+% 
+%     seg = cell(length(gtAnnotations), 1);
+%     intervel = zeros(length(gtAnnotations), 2);
+%     for j = 1:length(gtAnnotations)
+%         intervel(j, :) = gtAnnotations{j}.segment;
+%         featInd = round(intervel(j, :) * fps / 8);
+%         featInd(1) = max(1, min(nFeat, featInd(1)));
+%         featInd(2) = max(1, min(nFeat, featInd(2)));
+%         seg{j} = currSeq(:, featInd(1):featInd(2));
+%     end
+%     
+%     G = getGram_batch(seg, opt);
+%     D = HHdist(Gm, G, opt);
+%     [value, ind] = min(D);
+%     
+%     [basis,~] = momentPowers(0, 1, opt.mOrd);
+%     D2 = zeros(size(D));
+%     for j = 1:size(D2, 2)
+% %         ker = exp(-D(:, j)./scale/10);
+%         for k = 1:size(D2, 1)
+%             v = prod( bsxfun( @power, D(k, j), basis), 2);
+%             D2(k, j) = v' * M_inv{k} * v;
+%         end
+%     end
+%     [value, ind] = min(D2);
+%     
+% %     K = exp(bsxfun(@rdivide, -D, scale*10));
+% %     [value, ind] = min(K);
+% 
+%     dtAnnotations = struct('label',{},'score',{},'segment',{});
+%     dtAnnotations(1:length(seg)) = struct('label',[],'score',[],'segment',[]);
+%     for j = 1:length(seg)
+%         dtAnnotations(j).label = activityList{ind(j)};
+%         dtAnnotations(j).score = 1;
+%         dtAnnotations(j).segment = intervel(j, :);
+%     end
+%     hitCount = compareAnnotations(gtAnnotations, dtAnnotations, opt);
+%     gtCount = length(gtAnnotations);
+%     dtCount = length(dtAnnotations);
+%     total_hitCount = total_hitCount + hitCount;
+%     total_gtCount = total_gtCount + gtCount;
+%     total_dtCount = total_dtCount + dtCount;
+%     fprintf('hit / gt = %d/%d,\t hit / dt = %d/%d\n', hitCount, gtCount, hitCount, dtCount);
+% end
+
 % validation
 validationTimeStart = tic;
 nVal = nnz(valInd);
@@ -92,10 +157,16 @@ cVidValidationList = cVidList(valInd);
 total_hitCount = 0;
 total_gtCount = 0;
 total_dtCount = 0;
+
+D_143 = zeros(length(activityList), 300);
+count = 1;
 for i = 1:nVal
 % for i = 97
     fprintf('Test on Validation data %d/%d ... \t', i, nVal);
     gtAnnotations = lbl.(cVidValidationList{i}).annotations;
+    if ~any(strcmp(activityList{143}, gtAnnotations{1}.label))
+        continue;
+    end
 %     y_val{i} = lbl.(cVidValidationList{i}).annotations{1}.label;
     dataName = sprintf('/%s/c3d_features', vidValidationList{i});
     currSeq = h5read(fullfile(dataPath, fileName), dataName);
@@ -128,6 +199,8 @@ for i = 1:nVal
     G = getGram_batch(seg, opt);
     D = HHdist(Gm, G, opt);
     [value, ind] = min(D);
+    D_143(:, count:count+size(D,2)-1) = D;
+    count = count + size(D,2);
     
     [basis,~] = momentPowers(0, 1, opt.mOrd);
     D2 = zeros(size(D));
@@ -163,6 +236,8 @@ for i = 1:nVal
     total_dtCount = total_dtCount + dtCount;
     fprintf('hit / gt = %d/%d,\t hit / dt = %d/%d\n', hitCount, gtCount, hitCount, dtCount);
 end
+D_143(:,count:end) = [];
+save D_143 D_143;
 validationTime = toc(validationTimeStart);
 valObj.version = 'VERSION 1.3';
 valObj.results = results;
