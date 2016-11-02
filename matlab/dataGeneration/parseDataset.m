@@ -3,6 +3,8 @@ function [data, gt, output3] = parseDataset(opt)
 
 if strcmp(opt.dataset, 'MAD')
     [data, gt, output3] = parseMAD(opt);
+elseif strcmp(opt.dataset, 'ConcurrentAction')
+    [data, gt, output3] = parseConcurrentAction(opt);
 elseif strcmp(opt.dataset, 'activitynet');
     [data, gt, output3] = parseActivityNet(opt);
 end

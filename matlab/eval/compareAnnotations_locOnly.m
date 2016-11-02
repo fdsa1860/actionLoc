@@ -1,16 +1,12 @@
-function hitCount = compareAnnotations(gtAnnotations, dtAnnotations, thres)
+function hitCount = compareAnnotations_locOnly(gtAnnotations, dtAnnotations, opt)
 % compare ground truth annotations with detected annotations
 
 hitCount = 0;
 for i = 1:length(gtAnnotations)
-    currLabel = gtAnnotations(i).label;
     for j = 1:length(dtAnnotations)
-        if ~strcmp(dtAnnotations(j).label, currLabel)
-            continue;
-        end
-        gtInt = gtAnnotations(i).segment;
+        gtInt = gtAnnotations{i}.segment;
         dtInt = dtAnnotations(j).segment;
-        if IoU(gtInt, dtInt) > thres
+        if IoU(gtInt, dtInt) > opt.hitThres
             hitCount = hitCount + 1;
             break;
         end

@@ -20,6 +20,12 @@ end
 [activityList, vidList, cVidList, trInd, valInd, teInd] = ... 
     getActivityList(info, label);
 
+% fid = fopen('activitynetVideoList.txt','w');
+% for i = 1:length(vidList)
+% fprintf(fid, '%s.mp4\n', vidList{i});
+% end
+% fclose(fid);
+
 lbl = label.database;
 
 % train incrementally

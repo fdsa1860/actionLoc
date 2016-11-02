@@ -15,6 +15,10 @@ if ~isSymmetric
                 D(i,j) = JBLD(HH1{i},HH2{j});
             elseif strcmp(opt.metric,'JBLD_denoise')
                 D(i,j) = gramDist_cccp(pcaClean(HH1{i}), HH2{j}, opt);
+            elseif strcmp(opt.metric,'JBLD_XYX')
+                D(i,j) = JBLD(0.5*(HH1{i}+HH2{j}),HH1{i});
+            elseif strcmp(opt.metric,'JBLD_XYY')
+                D(i,j) = JBLD(0.5*(HH1{i}+HH2{j}),HH2{j});
             elseif strcmp(opt.metric,'binlong')
                 D(i,j) = 2 - norm(HH1{i}+HH2{j},'fro');
             elseif strcmp(opt.metric,'AIRM')
@@ -27,6 +31,7 @@ if ~isSymmetric
                 D(i,j) = subspace(HH1{i},HH2{j});
             elseif strcmp(opt.metric,'SubspaceAngle')
                 D(i,j) = SubspaceAngle(HH1{i},HH2{j},opt.SA_thr);
+
             end
         end
     end
@@ -39,6 +44,10 @@ else
                 D(i,j) = JBLD(HH1{i},HH2{j});
             elseif strcmp(opt.metric,'JBLD_denoise')
                 D(i,j) = gramDist_cccp(pcaClean(HH1{i}), HH2{j}, opt);
+            elseif strcmp(opt.metric,'JBLD_XYX')
+                D(i,j) = JBLD(0.5*(HH1{i}+HH2{j}),HH1{i});
+            elseif strcmp(opt.metric,'JBLD_XYY')
+                D(i,j) = JBLD(0.5*(HH1{i}+HH2{j}),HH2{j});
             elseif strcmp(opt.metric,'binlong')
                 D(i,j) = 2 - norm(HH1{i}+HH2{j},'fro');
             elseif strcmp(opt.metric,'AIRM')

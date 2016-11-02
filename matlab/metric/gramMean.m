@@ -4,7 +4,8 @@ function Xm = gramMean(X, opt)
 invalidInd = cellfun(@isempty, X);
 X(invalidInd) = [];
 
-if strcmp(opt.metric,'JBLD')
+if strcmp(opt.metric,'JBLD') || strcmp(opt.metric,'JBLD_XYY') || ...
+        strcmp(opt.metric,'JBLD_XYX')
     Xm = steinMean(cat(3,X{1:end}));
 elseif strcmp(opt.metric,'AIRM')
     Xm = karcher(X{1:end});

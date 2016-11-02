@@ -74,7 +74,7 @@ im_true = labelConv(gtlabE, 'slab2flab');
 im_test = tslab;
 
 gt = subplot(2,1,1);
-image(im_true);
+imagesc(im_true);
 % ft1 = title('');
 % set(ft1, 'FontSize', 10);
 set(gt, 'XTick', []);
@@ -89,7 +89,7 @@ title(['Event-based Detection Results (',num2str(thr),' overlap): Total Events='
        '; Recall=', num2str(Result.Rec)])
 
 ts = subplot(2,1,2);
-image(im_test);
+imagesc(im_test);
 % ft2 = title('');
 % set(ft2, 'FontSize', 10);
 set(ts, 'XTick', []);

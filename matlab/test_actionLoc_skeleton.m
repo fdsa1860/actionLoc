@@ -9,18 +9,21 @@ addpath(genpath('../3rdParty'));
 addpath(genpath('.'));
 
 % dataset parameters
-opt.dataset = 'MAD';
-opt.dataPath = fullfile('~','research','data','MAD','data_code','Sub_all');
-opt.nAction = 36;
+% opt.dataset = 'MAD';
+% opt.dataPath = fullfile('~','research','data','MAD','data_code','Sub_all');
+% opt.nAction = 36;
+opt.dataset = 'ConcurrentAction';
+opt.dataPath = fullfile('~','research','data','concurrentAction');
 
 % preprocessing parameters
 opt.diff = false;
 opt.removeMean = false;
 % train parameters
 opt.metric = 'JBLD';
+% opt.metric = 'JBLD_XYX';
 opt.H_structure = 'HHt';
 % opt.H_structure = 'HtH';
-opt.H_rows = 1;
+opt.H_rows = 3;
 opt.sigma = 1e-4;
 opt.pca = false;
 opt.pcaThres = 0.99;
@@ -33,15 +36,19 @@ opt.nCluster = 40;
 opt.kNN_ratio = 0.1;
 opt.scale_sig = 1;
 opt.greedyThr = 0.1;
+opt.eigThres = 0.1;
 % opt.greedyThr = 9;
+opt.hitThres = 0.5;
 
 time.trainTime = 0;
 time.testTime = 0;
 time.runTime = 0;
 
-[data, gt, tr_te_split] = parseDataset(opt);
+[data, gtE] = parseDataset(opt);
 
-data = preProcessing(data, opt);
+% data = preProcessing(data, opt);
+
+[results, T] = actionLoc_concurrent(data, gtE, opt);
 
 kFold = 5;
 nSequence = 40;

@@ -1,4 +1,4 @@
-function [res] = actionLoc_activitynet_incr_c3d_sos(opt)
+function [res] = actionLoc_activitynet_incr_log_c3d_sos(opt)
 
 runTimeStart = tic;
 
@@ -27,10 +27,11 @@ else
 end
 
 lbl = label.database;
+dimX = (opt.nVar * opt.H_rows + 1) * (opt.nVar * opt.H_rows) / 2;
 
 % train incrementally
-
-if ~exist(fullfile('..', 'expData', 'c3dsos_model2.mat'), 'file')
+trainTime = -1;
+if ~exist(fullfile('..', 'expData', 'logc3dsos_model2.mat'), 'file')
     trainTimeStart = tic;
     nTrain = nnz(trInd);
     vidTrainList = vidList(trInd);
@@ -52,10 +53,11 @@ if ~exist(fullfile('..', 'expData', 'c3dsos_model2.mat'), 'file')
     videoIndex(count:end) = [];
     annoIndex(count:end) = [];
     
-    if ~exist(fullfile('..', 'expData', 'train_data.mat'), 'file')
+    if ~exist(fullfile('..', 'expData', 'train_data_log_c3d_sos2.mat'), 'file')
         nTrain = length(trainLabelList);
-        X_train = zeros(500, nTrain);
+        X_train = zeros(dimX, nTrain);
         y_train = cell(1, nTrain);
+        invalidIndex = false(1, nTrain);
         for i = 1:nTrain
             fprintf('Processing instance %d/%d ... \n', i, nTrain);
             dataName = sprintf('/%s/c3d_features', vidTrainList{videoIndex(i)});
@@ -67,39 +69,38 @@ if ~exist(fullfile('..', 'expData', 'c3dsos_model2.mat'), 'file')
             featInd = round(anno.segment * fps / 8);
             featInd(1) = max(1, min(nFeat, featInd(1)));
             featInd(2) = max(1, min(nFeat, featInd(2)));
-            X_train(:, i) = mean(currSeq(:,featInd(1):featInd(2)), 2);
+            if featInd(2)-featInd(1) < opt.H_rows
+                invalidIndex(i) = true;
+                continue;
+            end
+            HH = getGram(currSeq(1:opt.nVar,featInd(1):featInd(2)), opt);
+            logHH = getLogHH({HH});
+            X_train(:, i) = logHH;
             y_train{i} = anno.label;
         end
-        save(fullfile('..', 'expData', 'train_data.mat'), 'X_train', 'y_train');
+        X_train(:,invalidIndex) = [];
+        y_train(invalidIndex) = [];
+        save(fullfile('..', 'expData', 'train_data_log_c3d_sos.mat'), 'X_train', 'y_train');
     else
-        load(fullfile('..', 'expData', 'train_data.mat'), 'X_train', 'y_train');
+        load(fullfile('..', 'expData', 'train_data_log_c3d_sos.mat'), 'X_train', 'y_train');
     end
     
     M_inv = cell(length(activityList), 1);
-%     X_mean = zeros(opt.nVar, length(activityList));
-%     r_mean = zeros(length(activityList), 1);
+    X_mean = zeros(dimX, length(activityList));
+    r_mean = zeros(length(activityList), 1);
     for i = 1:length(activityList)
         X_uni = X_train(:, strcmp(y_train, activityList{i}));
-%         X_uni = X_train(:, ~strcmp(y_train, activityList{i})); % use negative samples only
-        X_seg = X_uni(1:opt.nVar,:);
-        M_inv_pos = getInverseMomentMat(X_seg', opt.mOrd);
-%         X_mean(:,i) = mean(X_seg, 2);
-%         Xm = bsxfun(@minus, X_seg, X_mean(:,i));
-%         r_mean(i) = mean(sqrt(sum(Xm.^2)));
-%         Xr = Xm / r_mean(i);
-%         M_inv{i} = getInverseMomentMat(Xr', opt.mOrd);
-
-        X_uni = X_train(:, ~strcmp(y_train, activityList{i})); % use negative samples only
-        X_seg = X_uni(1:opt.nVar,:);
-        M_inv_neg = getInverseMomentMat(X_seg', opt.mOrd);
-        M_inv{i} = M_inv_pos - M_inv_neg;
+        X_mean(:,i) = mean(X_uni, 2);
+        Xm = bsxfun(@minus, X_uni, X_mean(:,i));
+        r_mean(i) = mean(sqrt(sum(Xm.^2)));
+        Xr = Xm / r_mean(i);
+        M_inv{i} = getInverseMomentMat(Xr', opt.mOrd);
     end
     
     trainTime = toc(trainTimeStart);
-%     save(fullfile('..', 'expData', 'c3dsos_model.mat'), 'M_inv', 'X_mean', 'r_mean');
-    save(fullfile('..', 'expData', 'c3dsos_model.mat'), 'M_inv');
+    save(fullfile('..', 'expData', 'logc3dsos_model.mat'), 'M_inv', 'X_mean', 'r_mean');
 else
-    load(fullfile('..', 'expData', 'c3dsos_model.mat'));
+    load(fullfile('..', 'expData', 'logc3dsos_model.mat'));
 end
 
 % validation
@@ -107,7 +108,7 @@ validationTimeStart = tic;
 nVal = nnz(valInd);
 vidValidationList = vidList(valInd);
 cVidValidationList = cVidList(valInd);
-[basis,~] = momentPowers(0, opt.nVar, opt.mOrd);
+[basis,~] = momentPowers(0, dimX, opt.mOrd);
 total_hitCount = 0;
 total_gtCount = 0;
 total_dtCount = 0;
@@ -123,29 +124,30 @@ for i = 1:nVal
     duration = lbl.(cVidValidationList{i}).duration;
     fps = ceil( (nFeat + 1) * 8 / duration );
     
-    X_test = zeros(500, length(gtAnnotations));
+    X_test = zeros(dimX, length(gtAnnotations));
     intervel = zeros(length(gtAnnotations), 2);
     for j = 1:length(gtAnnotations)
         intervel(j, :) = gtAnnotations{j}.segment;
         featInd = round(intervel(j, :) * fps / 8);
         featInd(1) = max(1, min(nFeat, featInd(1)));
         featInd(2) = max(1, min(nFeat, featInd(2)));
-        X_test(:, j) = mean(currSeq(:, featInd(1):featInd(2)), 2);
+%         X_test(:, j) = mean(currSeq(:, featInd(1):featInd(2)), 2);
+        HH = getGram(currSeq(1:opt.nVar,featInd(1):featInd(2)), opt);
+        logHH = getLogHH({HH});
+        X_test(:, j) = logHH;
     end
     
     y_pred = cell(size(X_test, 2), 1);
     for j = 1:size(X_test, 2)
         d = zeros(length(M_inv), 1);
-        x = X_test(1:opt.nVar, j);
+        x = X_test(:, j);
         for k = 1:length(M_inv)
-            v = prod( bsxfun( @power, x', basis), 2);
-%             xm = x - X_mean(:,k);
-%             xr = xm / r_mean(k);
-%             v = prod( bsxfun( @power, xr', basis), 2);
+            xm = x - X_mean(:,k);
+            xr = xm / r_mean(k);
+            v = prod( bsxfun( @power, xr', basis), 2);
             d(k) = v' * M_inv{k} * v;
         end
         [~,ind] = min(d);
-%         [~,ind] = max(d);
         y_pred{j} = activityList{ind};
     end
     

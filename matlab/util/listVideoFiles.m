@@ -3,7 +3,11 @@ function  listVideoFiles(dataPath, outputFile)
 fileList = dir(fullfile(dataPath, '*.mp4'));
 fid = fopen(outputFile,'w');
 for i = 1:length(fileList)
-    fprintf(fid,'%s\n',fullfile(dataPath, fileList(i).name));
+    if i ~= length(fileList)
+        fprintf(fid,'%s\n',fullfile(dataPath, fileList(i).name));
+    else
+        fprintf(fid,'%s',fullfile(dataPath, fileList(i).name));
+    end
 end
 fclose(fid);
 

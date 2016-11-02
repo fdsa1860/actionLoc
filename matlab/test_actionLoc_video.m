@@ -24,7 +24,7 @@ opt.sigma = 1e-4;
 opt.pca = false;
 opt.pcaThres = 0.99;
 % test parameters
-opt.IoU_thr = 0.5;
+opt.IoU_thr = 0.1;
 opt.winSize = 8;
 opt.stepSize = 1;
 opt.minLength = 4;
@@ -38,15 +38,19 @@ opt.hitThres = 0.5;
 opt.eigThres = 0.1;
 % SOS parameter
 opt.mOrd = 2;
-opt.nVar = 10;
+opt.nVar = 5;
+opt.sosThres = 3;
 
 % [data, gt, tr_te_split] = parseDataset(opt);
 
 if strcmp(opt.dataset, 'activitynet');
-    res = actionLoc_activitynet_incr(opt);
+%     res = actionLoc_activitynet_incr(opt);
 %     res = actionLoc_activitynet_incr_jbld_sos(opt);
 %     res = actionLoc_activitynet_incr_c3d_svm(opt);
 %     res = actionLoc_activitynet_incr_c3d_sos(opt);
+    res = nonactionLoc_activitynet_incr_c3d_sos(opt);
+    
+%     res = actionLoc_activitynet_incr_log_c3d_sos(opt);
 %     [accuracy, y_pred, y_val] = actionLoc_activitynet(data, gt, tr_te_split, opt);
     res
 end
