@@ -1,0 +1,68 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta name="generator" content="jemdoc, see http://jemdoc.jaboc.net/" />
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link rel="stylesheet" href="jemdoc.css" type="text/css" />
+<title>MMED - README</title>
+</head>
+<body>
+<div id="layout-content">
+<div id="toptitle">
+<h1>Max-Margin Early Event Detectors &ndash; version 0.1</h1>
+</div>
+<p>By: Minh Hoai Nguyen (minhhoai@gmail.com)              </p>
+<p>Date: 3 June 2012</p>
+<h2>Prerequisite libraries:</h2>
+<p>Kevin Murphy&rsquo;s HMM toolkit (For HMM and GMM): <a href="http://www.cs.ubc.ca/~murphyk/Software/HMM/hmm_download.html">link</a></p>
+<p>LibSVM (For normal binary SVMs): <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvm/">link</a></p>
+<p>Cplex (For Quadratic Programming, Cplex is free for academic usage):  <a href="http://www-304.ibm.com/support/docview.wss?uid=swg21419058">link</a></p>
+<p>VLFeat (For explicit approximate kernel): <a href="http://www.vlfeat.org/">link</a></p>
+<p>GSL CBLAS (for fast matrix operators) <a href="http://www.gnu.org/software/gsl/">link</a></p>
+<h2>Compilation:</h2>
+<p>1. Go to the mmed-release-0.1/src/. Modify the Makefile to set appropriate PATHs for Vlfeat, Cplex, GSL Cblas. 
+To compile, type:</p>
+<p>&gt; make                                                                                </p>
+<p>Compiled mex files are put in ./bin/</p>
+<p>2. Compile LibSVM by going to the source directory and type:</p>
+<p>&gt; make</p>
+<p>3. Open Matlab, change directory to: ./src/. Change the paths to HMMall and LibSVM, and run: </p>
+<p>&gt;&gt; m_setup                                       </p>
+<p>Matlab might complaint about name conflict of assert. This is the problem of Kevin Murphy&rsquo;s HMM. 
+Just ignore it.                                                 </p>
+<h2>Run Matlab demos:</h2>
+<p>&gt;&gt; m_demo_synData (this should be very fast)</p>
+<p>&gt;&gt; m_demo_asl (this will take around 15 minutes)</p>
+<h2>Source code</h2>
+<p><b>./src</b>:</p>
+<p>m_demo_synData.m: main function for experiments on synthetic data. </p>
+<p>m_demo_asl.m: Australian sign language. comparing HMM-based and SVM-based detectors.</p>
+<p>m_func_mu.m: compute the mu function, for slack variable rescaling.</p>
+<p>m_getFd.m: get the dimension of feature vectors.</p>
+<p>m_trnSegSVM.m: train binary segment-based SVM; this is not SO-SVM. 
+Negative segments are sampled randomly. With appropriate setting, the truncated events are taken as positive samples too.                      </p>
+<p>m_tstSegSVM.m: test segment-based SVM. This is not explicit to m_trnSegSVM. Any function based on segment uses
+this function to test</p>
+<p>m_getSegFeatVec.m: get the segment feature vector</p>
+<p>m_getRandSegFeatVecs.m: get feature vectors of random segments</p>
+<p>m_hmmLogLik.m: log-likelihood for HMM</p>
+<p><b>./src/kernel</b>: Contains C<tt></tt> code for several types of kernels and features. </p>
+<p>m_mexInstantDetect_ker.cpp: training MMED and SOSVM with kernel</p>
+<p>m_mexEval_ker.cpp: evaluating SVM-based detectors</p>
+<p>m_mvc_ker.cpp m_mvc_ker.h: helper files for getting most violated constraints</p>
+<p><b>./src/common</b>: This directory contains code for evaluation. </p>
+<p>m_event.h, m_event.cpp: helper files for Mex files of MMED</p>
+<p>m_mexAMOC.cpp: compute the AMOC curve</p>
+<p>m_mexCmpF1Score.cpp: compute F1 score</p>
+<p>m_mexF1curve.cpp: compute F1 curve</p>
+<p>m_mexF1curve_frm.cpp: compute F1 curve for frame-based detector</p>
+<p>m_mexSampleSeg.cpp: Mex function for ordered sampling a segment.</p>
+<div id="footer">
+<div id="footer-text">
+Page generated 2012-06-05 16:03:23 BST, by <a href="http://jemdoc.jaboc.net/">jemdoc</a>.
+</div>
+</div>
+</div>
+</body>
+</html>

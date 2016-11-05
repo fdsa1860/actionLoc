@@ -29,9 +29,9 @@ opt.pca = false;
 opt.pcaThres = 0.99;
 % test parameters
 opt.IoU_thr = 0.5;
-opt.winSize = 60;
+opt.winSize = 30;
 opt.stepSize = 1;
-opt.minLength = 40;
+opt.minLength = 10;
 opt.nCluster = 40;
 opt.kNN_ratio = 0.1;
 opt.scale_sig = 1;
@@ -39,6 +39,12 @@ opt.greedyThr = 0.1;
 opt.eigThres = 0.1;
 % opt.greedyThr = 9;
 opt.hitThres = 0.5;
+opt.WeightThres = 0.5;
+opt.Max = 1000;
+% SOS parameter
+opt.mOrd = 2;
+opt.nVar = 5;
+opt.sosThres = 3;
 
 time.trainTime = 0;
 time.testTime = 0;
@@ -48,7 +54,9 @@ time.runTime = 0;
 
 % data = preProcessing(data, opt);
 
-[results, T] = actionLoc_concurrent(data, gtE, opt);
+% [results] = actionLoc_concurrent(data, gtE, opt);
+% [results] = actionLoc_concurrent_reweight(data, gtE, opt);
+[result] = actionLoc_concurrent_subspaceVel2(data, gtE, opt);
 
 kFold = 5;
 nSequence = 40;

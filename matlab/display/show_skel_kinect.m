@@ -1,4 +1,4 @@
-function show_skel_MSRA(data)
+function show_skel_kinect(data)
 
 % data is (num_joints x 3) x T 
 
@@ -46,7 +46,7 @@ for t=1:T
         c2=J(2,j);
         line([x(c1,t) x(c2,t)], [y(c1,t) y(c2,t)], [z(c1,t) z(c2,t)]);
     end
-
+view(100,30);
 %     title([num2str(t) '/' num2str(T)]);
 %     axis tight;
 %     axis off;

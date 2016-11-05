@@ -1,4 +1,4 @@
-function [results, T] = actionLoc_concurrent(data, gtE, opt)
+function [result] = actionLoc_concurrent(seqs, gtE, opt)
 
 te_ind = 1:2:61;
 tr_ind = 2:2:60;
@@ -8,41 +8,38 @@ actionList = {'drink', 'make_a_call', 'turn_on_monitor', ...
 
 load ww;
 
-seqs_train = data(tr_ind);
+seqs_train = seqs(tr_ind);
 gte_train = gtE(tr_ind);
-maxLen = 100;
+maxLen = 500;
+nAction = length(actionList);
 nullClassLabel = length(actionList) + 1;
 
-nAction = length(actionList);
-data_class = cell(nAction, 1);
-for ai = 1:nAction
-    curr_data_class = cell(1, maxLen);
-    count = 1;
-    for i = 1:length(seqs_train)
-        dat = seqs_train{i};
-        g = gte_train{i};
-        for j = 1:length(g)
-            if strcmp(g(j).label, actionList{ai})
-                curr_data_class{count} = dat(:, g(j).segment(1):g(j).segment(2));
-%                 curr_data_class{count} = bsxfun(@times, kron(ww, [1 1 1]'), curr_data_class{count});
-                count = count + 1;
-            end
-        end
-%         if strcmp(actionList{ai}, 'null')
-%             curr_data_class = getNullClassSeq(dat, g);
-%             count = count + length(curr_data_class);
-%         end
+data = cell(1, maxLen);
+label = zeros(1, maxLen);
+count = 1;
+for i = 1:length(seqs_train)
+    dat = seqs_train{i};
+    g = gte_train{i};
+    for j = 1:length(g)
+        data{count} = dat(:, g(j).segment(1):g(j).segment(2));
+        data{count} = bsxfun(@times, kron(ww, [1 1 1]'), data{count});
+        label(count) = find(strcmp(g(j).label, actionList));
+        count = count + 1;
     end
-    curr_data_class(count:end) = [];
-    data_class{ai} = curr_data_class;
 end
+data(count:end) = [];
+label(count:end) = [];
+[label, sortInd] = sort(label);
+data = data(sortInd);
 
 % find importance weight
 % w = findJointWeight(data_class, opt);
+% w = findJointWeight2(data, label, opt);
 
 G = cell(nAction, 1);
-for ai = 1:nAction
-    G{ai} = getGram_batch(data_class{ai}, opt);
+for i = 1:length(G)
+%     G{ai} = getGram_batch(data_class{ai}, opt);
+    G{i} = getGram_batch(data(label==i), opt);
 end
 
 Gm = cell(length(G), 1);
@@ -69,11 +66,12 @@ for i = 1:length(Gm)
     mean_inter(i) = sum_inter / count;
 end
 d_thres = (mean_intra + mean_inter) / 2;
+d_thres(11) = 4;
 
 result.hitCount = zeros(1, length(actionList));
 result.gtCount = zeros(1, length(actionList));
 result.dtCount = zeros(1, length(actionList));
-seqs_test = data(te_ind);
+seqs_test = seqs(te_ind);
 gte_test = gtE(te_ind);
 for i = 1:length(seqs_test)
     currSeq = seqs_test{i};
@@ -97,10 +95,11 @@ for i = 1:length(seqs_test)
     len = cellfun(@(x)size(x,2), seg);
     dtLabel = zeros(length(actionList), size(currSeq, 2));
     for k = 1:length(actionList)
-        label = ind;
-        label((D(k, :) - val) ./ val < 0.1 & D(k, :) < d_thres(k)) = k;
-        label(label ~= k) = nullClassLabel;
-        dtLabel(k, :) = labelConv([label', len], 'slab2flab');
+        pred = ind;
+%         pred((D(k, :) - val) ./ val < 0.1 & D(k, :) < d_thres(k)) = k;
+        pred(D(k, :) < d_thres(k)) = k;
+        pred(pred ~= k) = nullClassLabel;
+        dtLabel(k, :) = labelConv([pred', len], 'slab2flab');
     end
     
     gtLabel =  nullClassLabel * ones(length(actionList), size(currSeq, 2));

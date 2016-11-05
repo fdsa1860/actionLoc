@@ -37,9 +37,14 @@ if ~exist(fullfile('..', 'expData', 'concurrentAction_data.mat'), 'file')
             while ~terminate
                 id = fscanf(fid, '%d\n', 1);
                 if isempty(id)
+                    seq_id = pre_id;
                     break;
                 end
+                if id == seq_id
+                    terminate = true;
+                end
                 raw = fscanf(fid, '%f,%f,%f,%d\n', [4, 20]);
+                pre_id = id;
 %                 if id == seq_id
 %                     terminate = true;
 %                 elseif isempty(id)
